@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -139,7 +138,8 @@ input{font-family:inherit}
     </div>
     <div class="hdr-actions">
       <span class="savestate" id="saveState">loading…</span>
-      <button class="gear-btn" onclick="openSettings()" title="GitHub Gist settings">⚙</button>
+      <span id="userChip" style="font-family:'DM Mono',monospace;font-size:11px;color:oklch(0.5 0.01 60);display:none"></span>
+      <button class="gear-btn" onclick="openSettings()" title="Account & settings">⚙</button>
       <button class="btn-secondary" onclick="exportBackup()"><span>↓</span> Backup</button>
       <label class="btn-secondary"><span>↑</span> Restore<input type="file" accept=".json" onchange="importBackup(event)" style="display:none"></label>
       <button class="btn-primary" onclick="addProject()"><span style="font-size:17px;line-height:0">+</span> New project</button>
@@ -175,42 +175,56 @@ input{font-family:inherit}
 
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script>
 /* ====== Seed data ====== */
 const SEED = [{"n":"choco chef","c":"Business","s":"Active","pr":"High","t":["finish choc course","publish choco course","create avatars","create copy","post all blogs","business plan","roles and responsibilities","DBA name and re-register license","certify new kitchen","create a course offer and landing page","create order bump","create oto 1","create oto 2","sell the course","send emails to list","promote course for valentines day","create many videos for fb inst yt li of buying chocolate etc","create workbook","create ancillary materials","chef jacket","bonuses","mentoring monthly with bonuses"]},{"n":"music","c":"Creative","s":"Active","pr":"Medium","t":["sing gold rush in clown","tune sitar","tune guitar","set up recording system","upload all recordings from phone","record songs, post on bandcamp","melvin to help set up recording again","start recording songs"]},{"n":"Deep Being","c":"Creative","s":"Active","pr":"Medium","t":["create ebook","update to include corporate documentary sale","Create season 2","sm content","write draft of shows I want","ebeneezer","fix user signups","audio book","videos","sales offer letter","Edit pride video","music videos","Edit Local Biz Network Video"]},{"n":"I Let Him Be","c":"Creative","s":"Active","pr":"High","t":["create landing page","set up funnel","order bump - audio book","create audio book","fix smashwords version"]},{"n":"MBH","c":"Business","s":"Active","pr":"High","t":["create site","add products","create offer","order bump","oto 1","oto 2","advertise","social media posts","create ebooks","audio books","videos","social media"]},{"n":"Craving Serenity","c":"Business","s":"Active","pr":"Medium","t":["create site","ebook","audio book","videos","offer page","social media"]},{"n":"GHL","c":"Business","s":"Active","pr":"Medium","t":["Contact Milan","get it all set up right","take 5 day training","sell services","Pay bill"]},{"n":"Habit Finder","c":"Business","s":"Active","pr":"Medium","t":["update score matrix spreadsheet","add structure and instructions","send update to Tobi","Ask for compensation…"]},{"n":"Insight Timer","c":"Creative","s":"Active","pr":"Medium","t":["create more meditations of varying lengths","create some courses","schedule 2 or 3 live events each week for 30 minutes","socialize the live events and meditations","may need to update some meditations"]},{"n":"April and Cliff","c":"Personal","s":"Idea","pr":"Low","t":[]},{"n":"Paul Martinelli","c":"Personal","s":"Idea","pr":"Low","t":[]},{"n":"Jim Edwards","c":"Business","s":"Active","pr":"Medium","t":["set up affiliate links","market affiliate with videos and content"]},{"n":"Coaches Helper","c":"Business","s":"Active","pr":"High","t":["Schedule live local events with Natalie and others","Schedule multiple weekly webinars and discussions","Business plan","business strategies","business Q&A","Edit masterclass video","email video to former registrants","create ever webinar of low morale class","use it as a lead magnet","redo the funnel mechanics","create email followups for this","create mastermind upgrade","enhance the coaches calculator and create funnel for it"]},{"n":"Sites in a Day","c":"Business","s":"Active","pr":"Medium","t":["update site","migrate to ghl"]},{"n":"US Cyber Command","c":"Business","s":"Active","pr":"High","t":["update home page","create landing page for each product bundle","remove individual courses","verify all payment configurations","verify new itu set up","create new phone number","verify twilio","update whatsapp business","create new fb page or change the name of it","create instagram","youtube","create avatars","marketing content calendar","market market market","start weekly open q&a","create webinars","create mastermind offer"]},{"n":"IT Consulting","c":"Business","s":"Idea","pr":"Low","t":["cybercommanddefense.com or cyberdefensive.com"]},{"n":"Ditch the Doubt","c":"Creative","s":"Idea","pr":"Low","t":[]},{"n":"Joe Rangel","c":"Personal","s":"Idea","pr":"Low","t":[]},{"n":"Paul Blanchard","c":"Personal","s":"Idea","pr":"Low","t":[]},{"n":"PMC","c":"Business","s":"Active","pr":"Medium","t":["drama","employee manual","operating manual","job description","PSA videos"]},{"n":"Jesus for Dinner","c":"Creative","s":"Active","pr":"Medium","t":["finish book","create site"]},{"n":"ART","c":"Creative","s":"Active","pr":"Medium","t":["create few times week posts","write stories about each piece of art","update art website","artwork of the week","stories about why I paint and create"]},{"n":"Wolf In You","c":"Business","s":"Active","pr":"Medium","t":["register site","create dropship products"]},{"n":"Unicorn In You","c":"Business","s":"Idea","pr":"Low","t":[]},{"n":"masteringlife.com","c":"Business","s":"Idea","pr":"Low","t":[]},{"n":"maca","c":"Business","s":"On hold","pr":"Low","t":["market affiliate"]},{"n":"Smashwords","c":"Business","s":"Active","pr":"Medium","t":["update books formatting?"]},{"n":"Ingram Spark","c":"Business","s":"Active","pr":"Medium","t":["set up account","publish books and ebooks through here"]},{"n":"Finances","c":"Money","s":"Active","pr":"High","t":["edit spending plan","enter receipts","link all planned income","Buy new Bowker ISBNs"]},{"n":"Winning Big Lottery","c":"Money","s":"Idea","pr":"Low","t":["set up corp","set up trust","set up foundation","plan which company to use for $ management of it"]}];
 
-/* ====== GitHub Gist storage ====== */
-const GIST_FILE = 'project_tracker_data.json';
-let CFG = {token:'', gistId:''};
-let saveTimer = null;
+/* ====== Supabase storage ====== */
+const SUPABASE_URL = 'https://owqrhocpmpzljzeayhcd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_cmniHltQ0Y6BjAti5c_WQA_jGqZicEG';
+const TABLE = 'project_tracker';
 
-function loadCfg(){ try{ const c=localStorage.getItem('pt_cfg'); if(c) CFG=JSON.parse(c); }catch(e){} }
-function saveCfg(){ localStorage.setItem('pt_cfg', JSON.stringify(CFG)); }
-function isConfigured(){ return !!(CFG.token && CFG.gistId); }
+let sb = null;
+let AUTH_USER = null;
+let saveTimer = null;
+let BOOT_OK = false;
+
 function setSaveState(t){ document.getElementById('saveState').textContent=t; }
 
-async function gistGet(){
-  const r=await fetch(`https://api.github.com/gists/${CFG.gistId}`,{headers:{'Authorization':`token ${CFG.token}`,'Accept':'application/vnd.github+json'}});
-  if(!r.ok) throw new Error(`Gist fetch failed: ${r.status}`);
-  const d=await r.json();
-  const raw=d.files?.[GIST_FILE]?.content;
-  return raw ? JSON.parse(raw) : null;
+function initSupabase(){
+  if(sb) return sb;
+  sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+    auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, storage: window.localStorage, storageKey: 'pt_auth' }
+  });
+  return sb;
 }
 
-async function gistSet(data){
-  const r=await fetch(`https://api.github.com/gists/${CFG.gistId}`,{method:'PATCH',headers:{'Authorization':`token ${CFG.token}`,'Accept':'application/vnd.github+json','Content-Type':'application/json'},body:JSON.stringify({files:{[GIST_FILE]:{content:JSON.stringify(data)}}})});
-  if(!r.ok) throw new Error(`Gist save failed: ${r.status}`);
+async function sbLoad(){
+  const { data, error } = await sb.from(TABLE).select('data').eq('user_email', AUTH_USER.email).maybeSingle();
+  if(error) throw error;
+  return data ? data.data : null;
+}
+
+async function sbSave(payload){
+  const { error } = await sb.from(TABLE).upsert({
+    user_email: AUTH_USER.email,
+    data: payload,
+    updated_at: new Date().toISOString()
+  }, { onConflict: 'user_email' });
+  if(error) throw error;
 }
 
 function scheduleSave(){
   setSaveState('saving…');
   clearTimeout(saveTimer);
   saveTimer = setTimeout(async ()=>{
-    if(!isConfigured()){ setSaveState('⚙ not saved — configure Gist in settings'); return; }
+    if(!AUTH_USER){ setSaveState('⚠ not saved — sign in first'); return; }
+    if(!BOOT_OK){ setSaveState("⚠ not saved — data hasn't finished loading safely yet"); return; }
     try{
-      await gistSet({projects:S.projects});
+      await sbSave({projects:S.projects});
       setSaveState('✓ saved  '+new Date().toLocaleTimeString());
-    }catch(e){ setSaveState('✗ save error — check ⚙ settings'); console.error(e); }
+    }catch(e){ setSaveState('✗ save error — see console'); console.error(e); }
   }, 800);
 }
 
@@ -312,41 +326,80 @@ function importBackup(e){
   reader.readAsText(file);
 }
 
-/* ====== Settings modal ====== */
+/* ====== Sign-in screen ====== */
+function renderSignIn(msg){
+  document.querySelector('.wrap').innerHTML = `
+    <div style="max-width:440px;margin:80px auto;padding:28px;background:white;border:1px solid oklch(0.91 0.006 80);border-radius:14px">
+      <h2 style="font-family:'Instrument Serif',serif;font-weight:400;font-size:30px;margin:0 0 6px;color:oklch(0.22 0.01 60)">Sign in</h2>
+      <p style="color:oklch(0.5 0.01 60);margin:0 0 18px;font-size:14px">Enter your email and we'll send you a one-time sign-in link. Same email = same board on every device.</p>
+      <input id="signInEmail" type="email" placeholder="you@example.com" value="robcabeca@gmail.com" style="width:100%;padding:11px 13px;border:1px solid oklch(0.89 0.006 80);border-radius:10px;font-size:15px;margin-bottom:10px;font-family:inherit;color:oklch(0.28 0.01 60)">
+      <button class="btn-primary" id="signInBtn" style="width:100%;padding:12px;justify-content:center">Send sign-in link</button>
+      <div id="signInMsg" style="margin-top:12px;font-size:13px;color:${msg?'oklch(0.52 0.16 28)':'oklch(0.5 0.01 60)'}">${msg||''}</div>
+    </div>`;
+  document.getElementById('signInBtn').onclick = async ()=>{
+    const email = document.getElementById('signInEmail').value.trim();
+    const msgEl = document.getElementById('signInMsg');
+    if(!email){ msgEl.style.color='oklch(0.52 0.16 28)'; msgEl.textContent='Please enter your email.'; return; }
+    msgEl.style.color='oklch(0.5 0.01 60)'; msgEl.textContent='Sending magic link…';
+    try{
+      const { error } = await sb.auth.signInWithOtp({ email, options:{ emailRedirectTo: window.location.href.split('#')[0] } });
+      if(error) throw error;
+      msgEl.style.color='oklch(0.45 0.14 150)'; msgEl.textContent=`✓ Check ${email} — click the link to sign in.`;
+    }catch(e){
+      msgEl.style.color='oklch(0.52 0.16 28)'; msgEl.textContent='✗ '+(e.message||'Could not send link.'); console.error(e);
+    }
+  };
+}
+
+/* ====== Settings modal (account + import) ====== */
 function openSettings(){
   const existing=document.getElementById('settingsBg'); if(existing){ existing.remove(); return; }
   const d=document.createElement('div'); d.id='settingsBg'; d.className='modal-bg';
-  d.innerHTML=`<div class="modal">
-    <h2>⚙ GitHub Gist Settings</h2>
-    <p>Your data is stored in a private GitHub Gist. Configure once per browser — then all changes save automatically.</p>
-    <div class="modal-field"><label>Personal Access Token</label><input id="cfg_token" type="password" value="${CFG.token}" placeholder="ghp_xxxxxxxxxxxx"></div>
-    <div class="modal-field"><label>Gist ID</label><input id="cfg_gist" value="${CFG.gistId}" placeholder="a1b2c3d4e5f6…"></div>
-    <div class="modal-actions">
-      <button class="btn-primary" id="cfgSave">Save & connect</button>
-      <button class="btn-secondary" id="cfgTest">Test connection</button>
-      <button class="btn-secondary" style="margin-left:auto" id="cfgClose">Cancel</button>
+  d.innerHTML=`<div class="modal" style="max-height:90vh;overflow:auto">
+    <h2>⚙ Account & settings</h2>
+    <p>Signed in as <b>${AUTH_USER?AUTH_USER.email:'(not signed in)'}</b>. Every change auto-saves to Supabase.</p>
+
+    <div style="border:1px solid oklch(0.9 0.006 80);border-radius:10px;padding:14px;margin-bottom:14px">
+      <h3 style="font-family:'Instrument Serif',serif;font-weight:400;margin:0 0 6px;font-size:18px">Import from a Gist backup</h3>
+      <p style="font-size:12.5px;color:oklch(0.5 0.01 60);margin:0 0 10px">Paste the JSON you saved from your old Gist. This <b>replaces</b> the current project list.</p>
+      <textarea id="importJson" placeholder='{"projects":[...]}' style="width:100%;min-height:100px;border:1px solid oklch(0.89 0.006 80);border-radius:8px;padding:8px 10px;font-family:'DM Mono',monospace;font-size:12px"></textarea>
+      <button class="btn-primary" id="importBtn" style="margin-top:8px;padding:8px 14px;font-size:13px">Import & replace</button>
+      <div id="importMsg" style="margin-top:8px;font-size:12.5px"></div>
     </div>
-    <div class="modal-msg" id="cfgMsg"></div>
+
+    <div class="modal-actions">
+      <button class="btn-secondary" id="signOutBtn">Sign out</button>
+      <button class="btn-secondary" id="settingsClose" style="margin-left:auto">Close</button>
+    </div>
   </div>`;
   document.body.appendChild(d);
   d.onclick=e=>{ if(e.target===d) d.remove(); };
-  document.getElementById('cfgClose').onclick=()=>d.remove();
-  document.getElementById('cfgSave').onclick=async()=>{
-    CFG.token=document.getElementById('cfg_token').value.trim();
-    CFG.gistId=document.getElementById('cfg_gist').value.trim();
-    saveCfg();
-    document.getElementById('cfgMsg').textContent='Saved. Testing…';
-    await testConn(d);
+  document.getElementById('settingsClose').onclick=()=>d.remove();
+  document.getElementById('signOutBtn').onclick=async()=>{ await sb.auth.signOut(); location.reload(); };
+  document.getElementById('importBtn').onclick=async()=>{
+    const raw=document.getElementById('importJson').value.trim();
+    const msg=document.getElementById('importMsg');
+    if(!raw){ msg.style.color='oklch(0.52 0.16 28)'; msg.textContent='Paste your backup JSON first.'; return; }
+    let parsed;
+    try{ parsed=JSON.parse(raw); }catch(e){ msg.style.color='oklch(0.52 0.16 28)'; msg.textContent="That doesn't look like valid JSON."; return; }
+    const projects = Array.isArray(parsed) ? parsed : parsed.projects;
+    if(!Array.isArray(projects)){ msg.style.color='oklch(0.52 0.16 28)'; msg.textContent="JSON doesn't contain a projects list."; return; }
+    if(!confirm(`Replace your current tracker with ${projects.length} imported projects? This can't be undone.`)) return;
+    S.projects = projects.map((p,i)=>({
+      id:p.id||('p'+i), name:p.name||'Untitled', category:p.category||'Business',
+      status:p.status||'Active', priority:p.priority||'Medium', note:p.note||'',
+      tasks:Array.isArray(p.tasks)?p.tasks.map((t,j)=>({id:t.id||('t'+j),t:t.t||'',done:!!t.done})):[]
+    }));
+    S.expanded={}; S.filterStatus=null; S.filterCat=null; S.query=''; S.sort='status';
+    msg.style.color='oklch(0.5 0.01 60)'; msg.textContent='Imported. Saving to Supabase…';
+    try{
+      await sbSave({projects:S.projects});
+      msg.style.color='oklch(0.45 0.14 150)'; msg.textContent='✓ Imported and saved. Reloading…';
+      setTimeout(()=>{ d.remove(); location.reload(); }, 900);
+    }catch(e){
+      msg.style.color='oklch(0.52 0.16 28)'; msg.textContent='✗ Save failed: '+(e.message||'unknown'); console.error(e);
+    }
   };
-  document.getElementById('cfgTest').onclick=async()=>await testConn(d);
-}
-async function testConn(d){
-  const msg=document.getElementById('cfgMsg');
-  try{
-    const r=await fetch(`https://api.github.com/gists/${CFG.gistId}`,{headers:{'Authorization':`token ${CFG.token}`}});
-    if(r.ok){ msg.style.color='oklch(0.45 0.14 150)'; msg.textContent='✓ Connected! Reloading…'; setTimeout(()=>{ d.remove(); location.reload(); },1200); }
-    else{ msg.style.color='oklch(0.52 0.16 28)'; msg.textContent=`✗ Error ${r.status} — check your token and Gist ID`; }
-  }catch(e){ msg.style.color='oklch(0.52 0.16 28)'; msg.textContent='✗ Network error — check token and try again'; }
 }
 
 /* ====== Render ====== */
@@ -492,33 +545,85 @@ function clearFilters(){ S.filterStatus=null; S.filterCat=null; S.query=''; docu
 function confirmDelete(pid,name){ if(confirm(`Delete "${name||'this project'}" and all its tasks?`)) deleteProject(pid); }
 
 /* ====== Boot ====== */
-(async()=>{
-  loadCfg();
-  if(!isConfigured()){
-    setSaveState('⚙ Click the gear to connect your GitHub Gist');
-    S.projects=seedProjects();
-    render();
+function renderBootError(msg){
+  document.querySelector('.wrap').innerHTML = `
+    <div style="max-width:520px;margin:80px auto;text-align:center">
+      <div style="font-size:32px;margin-bottom:10px">⚠</div>
+      <h2 style="font-family:'Instrument Serif',serif;font-weight:400;font-size:28px;margin:0 0 10px">Couldn't load your data</h2>
+      <p style="color:oklch(0.5 0.01 60);margin:0 0 18px">${msg}<br>Nothing has been changed or overwritten — it's safe to retry.</p>
+      <button class="btn-primary" onclick="location.reload()">Retry</button>
+      <button class="btn-secondary" onclick="openSettings()" style="margin-left:8px">Account</button>
+    </div>`;
+}
+
+async function bootWithSession(session){
+  AUTH_USER = { email: session.user.email, id: session.user.id };
+  const chip = document.getElementById('userChip');
+  if(chip){ chip.textContent = AUTH_USER.email; chip.style.display='inline'; }
+
+  setSaveState('loading from Supabase…');
+  let loaded=null, loadFailed=false, failMsg='';
+  try{
+    loaded = await sbLoad();
+  }catch(e){
+    loadFailed = true;
+    failMsg = e.message || 'Unknown error';
+    console.error(e);
+  }
+
+  if(loadFailed){
+    setSaveState('✗ Could not load');
+    renderBootError(`Supabase request failed (${failMsg}). Check the browser console for details.`);
     return;
   }
-  setSaveState('loading from Gist…');
-  try{
-    const loaded=await gistGet();
-    if(loaded&&Array.isArray(loaded.projects)&&loaded.projects.length){
-      S.projects=loaded.projects;
-      setSaveState('✓ loaded  '+new Date().toLocaleTimeString());
-    } else {
-      S.projects=seedProjects();
-      setSaveState('first run — saving to Gist…');
-      try{
-        await gistSet({projects:S.projects});
-        setSaveState('✓ saved  '+new Date().toLocaleTimeString());
-      }catch(e){ setSaveState('✗ save error — check ⚙ settings'); }
+
+  if(loaded && Array.isArray(loaded.projects)){
+    S.projects = loaded.projects;
+    BOOT_OK = true;
+    setSaveState('✓ loaded  '+new Date().toLocaleTimeString());
+  } else {
+    const ok = confirm("This account doesn't have a saved tracker yet.\n\nClick OK to seed it with the original project list (which you can then replace via ⚙ → Import from a Gist backup), or Cancel to stop here.");
+    if(!ok){
+      renderBootError('Stopped before writing anything. Reload when ready.');
+      return;
     }
-  }catch(e){
-    setSaveState('✗ could not load — check ⚙ settings');
-    S.projects=seedProjects();
+    S.projects = seedProjects();
+    setSaveState('saving seed data…');
+    try{
+      await sbSave({projects:S.projects});
+      BOOT_OK = true;
+      setSaveState('✓ saved  '+new Date().toLocaleTimeString());
+    }catch(e){
+      setSaveState('✗ save error');
+      renderBootError('Could not save the initial data. Nothing was lost — just retry. ('+ (e.message||'unknown') +')');
+      return;
+    }
   }
   render();
+}
+
+(async()=>{
+  if(!window.supabase){
+    renderBootError('Supabase JS library could not load. Check your internet connection and reload.');
+    return;
+  }
+  initSupabase();
+
+  const { data: { session } } = await sb.auth.getSession();
+  if(session && session.user){
+    await bootWithSession(session);
+  } else {
+    setSaveState('signed out');
+    renderSignIn();
+  }
+
+  sb.auth.onAuthStateChange(async (event, session)=>{
+    if(event === 'SIGNED_IN' && session && !AUTH_USER){
+      await bootWithSession(session);
+    } else if(event === 'SIGNED_OUT'){
+      location.reload();
+    }
+  });
 })();
 </script>
 </body>
